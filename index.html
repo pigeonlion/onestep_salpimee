@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ONESTEP 플랫폼_살핌이</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,900;1,900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet & OpenStreetMap 라이브러리 -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
+
+  <!-- Leaflet Routing Machine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #F7F4EF;            
+      --bg-card: #FFFFFF;            
+      --accent-gold: #0B6B48;        
+      --accent-gold-hover: #085237;  
+      --text-main: #2C3531;          
+      --text-muted: #6B7770;        
+      --sidebar-width: 320px;
+      --header-height: 80px;
+      --transition-fast: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      --border-color: rgba(11, 107, 72, 0.18);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 상단 헤더 */
+    header {
+      height: var(--header-height);
+      background-color: rgba(247, 244, 239, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      position: relative;
+      z-index: 1001;
+      backdrop-filter: blur(10px);
+    }
+
+    .brand-logo-text-only {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--accent-gold);
+      letter-spacing: 2px;
+      font-style: italic;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .sidebar-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: #EFECE6;
+      border: 1px solid var(--border-color);
+      border-radius: 50%;
+      color: var(--text-main);
+      font-size: 20px;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+
+    .sidebar-trigger:hover {
+      background: var(--accent-gold);
+      color: #FFF;
+      border-color: var(--accent-gold);
+      box-shadow: 0 4px 12px rgba(11, 107, 72, 0.2);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--header-height));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .view-panel {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .view-panel.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 홈 화면 히어로 섹션 */
+    .section-hero {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: center;
+      padding: 40px 20px 30px 20px;
+      background: radial-gradient(circle at center, rgba(11, 107, 72, 0.08) 0%, rgba(247, 244, 239, 1) 85%);
+      position: relative;
+    }
+
+    .hero-logo-container {
+      width: clamp(350px, 45vw, 550px);
+      height: auto;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-logo-img {
+      max-width: 100%;
+      max-height: 220px;
+      object-fit: contain;
+    }
+
+    .hero-subtitle {
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: var(--text-main);
+      max-width: 850px;
+      line-height: 1.6;
+      word-break: keep-all;
+      margin-bottom: 10px;
+      z-index: 2;
+    }
+    .hero-subtitle strong { color: var(--accent-gold); font-weight: 800; }
+
+    /* 홈 화면 하단 랜딩 섹션 (흰색 배경 영역) */
+    .landing-section {
+      width: 100%;
+      background: #FFFFFF;
+      padding: 50px 20px 60px 20px;
+      border-top: 1px solid var(--border-color);
+    }
+    .landing-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* 스테 & 비아 캐릭터 카드 및 전체 의미 배너 */
+    .character-white-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 25px;
+      margin-bottom: 60px;
+      padding: 10px 0;
+    }
+
+    .character-cards-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 30px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .character-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      flex: 1;
+      min-width: 280px;
+      max-width: 380px;
+      background: #F7F4EF;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 25px 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      transition: var(--transition-fast);
+    }
+    .character-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent-gold);
+      box-shadow: 0 8px 20px rgba(11, 107, 72, 0.12);
+    }
+
+    .character-card img {
+      height: 160px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 15px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+    }
+
+    .character-name-badge {
+      display: inline-block;
+      background: var(--accent-gold);
+      color: #FFF;
+      font-size: 1.1rem;
+      font-weight: 800;
+      padding: 5px 18px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    .character-meaning-tag {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-gold);
+      margin-bottom: 8px;
+      background: rgba(11, 107, 72, 0.1);
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+
+    .character-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+
+    .stevia-combine-banner {
+      width: 100%;
+      max-width: 790px;
+      background: linear-gradient(135deg, rgba(11, 107, 72, 0.08) 0%, rgba(247, 244, 239, 0.9) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px 25px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    .stevia-combine-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .stevia-combine-text {
+      font-size: 0.93rem;
+      color: var(--text-main);
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+    .stevia-combine-text strong {
+      color: var(--accent-gold);
+    }
+
+    .section-header-title {
+      text-align: center;
+      font-size: 1.8rem;
+      color: var(--accent-gold);
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+    .section-header-sub {
+      text-align: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    /* 실시간 통계 카운터 바 */
+    .stats-counter-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      background: #F7F4EF;
+      padding: 30px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 60px;
+      text-align: center;
+    }
+    .stat-number { font-size: 2.2rem; font-weight: 900; color: var(--accent-gold); margin-bottom: 4px; }
+    .stat-label { font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
+
+    /* 주요 특장점 그리드 */
+    .feature-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-bottom: 60px;
+    }
+    .landing-card {
+      background: #FFF;
+      border: 1px solid var(--border-color);
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      transition: var(--transition-fast);
+    }
+    .landing-card:hover { transform: translateY(-5px); border-color: var(--accent-gold); box-shadow: 0 10px 25px rgba(11, 107, 72, 0.1); }
+    .card-icon-box {
+      width: 55px; height: 55px; background: rgba(11, 107, 72, 0.1);
+      border-radius: 12px; color: var(--accent-gold); font-size: 1.5rem;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+    }
+    .card-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: var(--text-main); }
+    .card-desc { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* 공지사항 & 리뷰 피드 */
+    .info-dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .info-box { background: #F7F4EF; padding: 25px; border-radius: 12px; border: 1px solid var(--border-color); }
+    .info-box h3 { font-size: 1.1rem; color: var(--accent-gold); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+    .info-list { list-style: none; }
+    .info-list li { font-size: 0.9rem; padding: 8px 0; border-bottom: 1px dashed rgba(0,0,0,0.08); display: flex; justify-content: space-between; }
+
+    /* 홈페이지 푸터 (Footer) */
+    footer {
+      background: #2C3531;
+      color: #A0AEC0;
+      padding: 40px 20px;
+      font-size: 0.85rem;
+      line-height: 1.7;
+    }
+    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+    .footer-links { display: flex; gap: 15px; margin-bottom: 10px; }
+    .footer-links a { color: #FFF; text-decoration: none; font-weight: bold; }
+
+    /* 공통 컴포넌트 */
+    .feature-container {
+      max-width: 950px;
+      margin: 0 auto;
+      padding: 30px;
+      width: 100%;
+    }
+
+    .feature-title {
+      font-size: 1.8rem;
+      color: var(--accent-gold);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+
+    .form-control {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid rgba(11, 107, 72, 0.25);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .form-control:focus { border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(11, 107, 72, 0.1); }
+
+    .btn-gold {
+      background: var(--accent-gold);
+      color: #FFF;
+      font-weight: 700;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: var(--transition-fast);
+      text-align: center;
+    }
+    .btn-gold:hover { background: var(--accent-gold-hover); box-shadow: 0 4px 12px rgba(11, 107, 72, 0.25); }
+
+    .btn-uncolored {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: var(--transition-fast);
+      text-align: center;
+    }
+    .btn-uncolored:hover { background: #EFECE6; border-color: var(--accent-gold); }
+
+    .btn-outline {
+      background: #FFF;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-outline:hover { background: #EFECE6; }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 15px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .product-card:hover { transform: translateY(-4px); border-color: var(--accent-gold); box-shadow: 0 8px 18px rgba(11, 107, 72, 0.12); }
+
+    .product-img-box {
+      width: 100%; height: 160px; background: #EFECE6; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent-gold); font-size: 2.5rem; margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .product-img-box img {
+      width: 100%; height: 100%; object-fit: contain; background: #fff;
+    }
+
+    .product-name { font-size: 1rem; font-weight: bold; margin-bottom: 6px; color: var(--text-main); }
+    .product-price { font-size: 0.95rem; color: var(--accent-gold); font-weight: bold; }
+    .product-rating { font-size: 0.82rem; color: var(--accent-gold); margin-top: 4px; }
+
+    .detail-view-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .price-del {
+      text-decoration: line-through;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-right: 6px;
+    }
+
+    .option-sub-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #F7F4EF;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* 실제 아날로그 시간에 연동되는 원형 시계 UI */
+    .time-picker-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 25px;
+      text-align: center;
+    }
+    .time-inputs-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .time-input-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .time-input-box label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-gold);
+      margin-bottom: 4px;
+    }
+    .time-input-box input[type="time"] {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--text-main);
+      background: #F7F4EF;
+      outline: none;
+    }
+
+    .interactive-clock-container {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      margin: 10px auto;
+      user-select: none;
+    }
+    .clock-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .clock-face-bg {
+      fill: #F7F4EF;
+      stroke: #EFECE6;
+      stroke-width: 8;
+    }
+    .clock-tick {
+      stroke: var(--text-muted);
+      stroke-width: 1.5;
+      opacity: 0.5;
+    }
+    .clock-arc-range {
+      fill: none;
+      stroke: var(--accent-gold);
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: d 0.3s ease;
+    }
+    .clock-center-display {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .clock-time-text {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--accent-gold);
+    }
+    .clock-duration-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .complete-screen { display: none; text-align: center; padding: 60px 20px; }
+    .complete-screen i { font-size: 4rem; color: var(--accent-gold); margin-bottom: 20px; }
+
+    /* 메이트 슬라이더 */
+    .mate-slider-wrap {
+      width: 100%;
+      overflow: hidden;
+      margin-bottom: 25px;
+      position: relative;
+      background: #EFECE6;
+      padding: 15px 0;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .mate-slider-track {
+      display: flex;
+      gap: 15px;
+      width: max-content;
+      animation: mateSlideAnim 25s linear infinite;
+    }
+    .mate-slider-track:hover { animation-play-state: paused; }
+
+    @keyframes mateSlideAnim {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .mate-card-item {
+      width: 240px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 15px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .manner-badge {
+      display: inline-block;
+      background: rgba(11, 107, 72, 0.12);
+      color: var(--accent-gold);
+      font-size: 0.78rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: bold;
+    }
+
+    .mate-grid-results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    /* 팝업 모달 공통 */
+    .app-modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 10000; display: none;
+      align-items: center; justify-content: center; backdrop-filter: blur(4px);
+    }
+
+    .app-modal-container {
+      background: #FFF;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 480px;
+      max-width: 92%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+
+    .app-modal-header {
+      background: #F7F4EF;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--accent-gold);
+    }
+
+    .app-modal-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .mate-search-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .mate-search-input-box {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+    }
+
+    .header-icon-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #FFF;
+      border: 1px solid var(--border-color);
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .header-icon-btn:hover { background: var(--accent-gold); color: #FFF; }
+    .badge-dot {
+      position: absolute; top: 2px; right: 2px;
+      width: 8px; height: 8px; background: #e53e3e; border-radius: 50%;
+      display: none;
+    }
+
+    /* 카카오톡 스타일 메시지 UI */
+    .chat-user-list { display: flex; flex-direction: column; gap: 8px; }
+    .chat-user-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px; background: #F7F4EF; border: 1px solid var(--border-color);
+      border-radius: 8px; cursor: pointer; transition: var(--transition-fast);
+    }
+    .chat-user-item:hover { background: #EFECE6; border-color: var(--accent-gold); }
+    .chat-unread-badge {
+      background: #e53e3e; color: white; border-radius: 50%;
+      width: 20px; height: 20px; font-size: 0.75rem; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .chat-messages { display: flex; flex-direction: column; gap: 10px; height: 280px; overflow-y: auto; background: #F7F4EF; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color); }
+    .chat-bubble { max-width: 75%; padding: 8px 12px; border-radius: 10px; font-size: 0.88rem; }
+    .chat-bubble.other { background: #FFF; color: var(--text-main); align-self: flex-start; border: 1px solid var(--border-color); }
+    .chat-bubble.me { background: var(--accent-gold); color: #FFF; font-weight: 500; align-self: flex-end; }
+
+    .stair-rating-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 80px;
+      margin: 15px 0;
+      justify-content: center;
+    }
+    .stair-step {
+      flex: 1;
+      background: #EFECE6;
+      border: 1px solid var(--border-color);
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: bold;
+    }
+    .stair-step.active {
+      background: var(--accent-gold);
+      color: #FFF;
+      box-shadow: 0 0 8px rgba(11, 107, 72, 0.3);
+    }
+
+    #view-map { position: relative; width: 100%; height: 100%; overflow: hidden; }
+    #map-container { position: relative; width: 100%; height: 100%; }
+    #map { width: 100%; height: 100%; }
+
+    .search-box {
+      position: absolute; top: 15px; left: 15px; z-index: 1000;
+      display: flex; gap: 6px; background: #ffffff; padding: 10px;
+      border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border: 1px solid var(--border-color);
+    }
+    .search-box input { width: 230px; padding: 9px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; outline: none; }
+    .search-box button { padding: 9px 14px; background-color: var(--accent-gold); color: #FFF; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: var(--transition-fast); }
+    .search-box button:hover { background-color: var(--accent-gold-hover); }
+    .gps-btn { background-color: #085237 !important; color: white !important; }
+
+    .popup-card { padding: 6px; min-width: 250px; font-size: 13px; line-height: 1.6; color: var(--text-main); }
+    .popup-card h3 { font-size: 15px; color: #1a202c; font-weight: bold; margin-bottom: 6px; border-bottom: 2px solid var(--accent-gold); padding-bottom: 4px; }
+    .popup-card p { margin: 4px 0; color: #4a5568; word-break: keep-all; }
+    .popup-card .label { font-weight: bold; color: #2d3748; display: inline-block; width: 70px; }
+    .popup-card .tag { display: inline-block; background: rgba(11, 107, 72, 0.1); color: var(--accent-gold); padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+    .leaflet-routing-icon { display: none !important; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 9999; display: none;
+      align-items: center; justify-content: center; backdrop-filter: blur(2px);
+    }
+    .modal-box {
+      background: #ffffff; padding: 24px; border-radius: 12px; width: 320px;
+      text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-box p { font-size: 15px; font-weight: bold; color: #1a202c; margin-bottom: 20px; word-break: keep-all; }
+    .modal-btns { display: flex; gap: 10px; justify-content: center; }
+    .modal-btns button { flex: 1; padding: 10px 0; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-yes { background-color: var(--accent-gold); color: white; }
+    .btn-yes:hover { background-color: var(--accent-gold-hover); }
+    .btn-no { background-color: #edf2f7; color: #4a5568; }
+
+    .sidebar {
+      position: fixed; top: 0; bottom: 0; width: var(--sidebar-width);
+      background-color: rgba(247, 244, 239, 0.98); z-index: 2000;
+      transition: transform var(--transition-smooth); display: flex; flex-direction: column;
+      box-shadow: 0 0 25px rgba(0,0,0,0.1); backdrop-filter: blur(15px);
+    }
+    .sidebar-left { left: 0; transform: translateX(-100%); border-right: 1px solid var(--border-color); }
+    .sidebar-right { right: 0; transform: translateX(100%); border-left: 1px solid var(--border-color); }
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-header {
+      height: var(--header-height); padding: 0 25px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .sidebar-header h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); display: flex; align-items: center; gap: 10px; }
+
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 20px 0; }
+    .menu-item { list-style: none; }
+    .menu-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 25px; color: var(--text-main); text-decoration: none;
+      font-size: 0.95rem; font-weight: 500; transition: var(--transition-fast); cursor: pointer;
+    }
+    .menu-link:hover { background-color: rgba(11, 107, 72, 0.08); color: var(--accent-gold); }
+    .menu-link .menu-title { display: flex; align-items: center; gap: 12px; }
+    .menu-link .menu-title i { width: 20px; text-align: center; color: var(--text-muted); }
+    .menu-link:hover .menu-title i { color: var(--accent-gold); }
+    .arrow-icon { font-size: 0.8rem; color: var(--text-muted); transition: transform var(--transition-fast); }
+
+    .submenu { max-height: 0; overflow: hidden; background-color: #EFECE6; transition: max-height 0.35s ease-in-out; }
+    .submenu.active { max-height: 500px; }
+    .submenu-item { list-style: none; }
+    .submenu-link { display: flex; align-items: center; padding: 11px 25px 11px 57px; color: var(--text-muted); text-decoration: none; font-size: 0.88rem; transition: var(--transition-fast); }
+    .submenu-link:hover { color: var(--accent-gold); background-color: rgba(11, 107, 72, 0.05); }
+    .menu-item.active > .menu-link .arrow-icon { transform: rotate(180deg); color: var(--accent-gold); }
+
+    .google-btn {
+      background: #fff; color: #333; font-weight: bold; border: 1px solid #ccc;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 10px;
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      background: #FFF;
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+    .calendar-day-head {
+      font-weight: bold;
+      color: var(--accent-gold);
+      padding: 8px 0;
+      font-size: 0.85rem;
+    }
+    .calendar-day {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      min-height: 55px;
+      padding: 6px;
+      cursor: pointer;
+      position: relative;
+      font-size: 0.85rem;
+    }
+    .calendar-day.empty {
+      background: transparent;
+      border: none;
+      cursor: default;
+    }
+    .calendar-day:not(.empty):hover { border-color: var(--accent-gold); background: #EFECE6; }
+    .calendar-day.has-diary { border-color: var(--accent-gold); background: rgba(11, 107, 72, 0.08); font-weight: bold; }
+    .diary-indicator {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-gold);
+      border-radius: 50%;
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header>
+    <div class="sidebar-trigger" id="leftTrigger" title="서비스 메뉴">
+      <i class="fa-solid fa-bars"></i>
+    </div>
+    
+    <!-- 상단 브랜드 로고: ONESTEP -->
+    <a href="javascript:void(0)" class="brand-logo-text-only" onclick="switchView('view-home')">
+      ONESTEP
+    </a>
+
+    <div class="sidebar-trigger" id="rightTrigger" title="설정 메뉴">
+      <i class="fa-solid fa-user"></i>
+    </div>
+  </header>
+
+  <!-- 메인 컨텐츠 영역 -->
+  <main>
+    <!-- 0. 홈 화면 -->
+    <div id="view-home" class="view-panel active">
+      
+      <!-- 히어로 섹션 -->
+      <section class="section-hero">
+        <div class="hero-logo-container">
+          <img src="KakaoTalk_20261102_170353668.png" alt="ONESTEP 로고" class="hero-logo-img">
+        </div>
+
+        <p class="hero-subtitle">
+          <strong>원스텝</strong>은 직접 체험해보고, 몸으로 느끼며, 운동이 일상이 되는 <strong>첫 걸음을 만듭니다.</strong>
+        </p>
+      </section>
+
+      <!-- 랜딩 정보 섹션 (흰색 배경) -->
+      <section class="landing-section">
+        <div class="landing-container">
+
+          <!-- 요청하신 스테 & 비아 명칭 의미 및 설탕 대체재 '스테비아' 개편 캐릭터 카드 -->
+          <div class="character-white-section">
+            
+            <div class="character-cards-wrap">
+              <div class="character-card">
+                <img src="KakaoTalk_20261030_235939396_01-removebg-preview.png" alt="스테">
+                <span class="character-name-badge">스테 (STE)</span>
+                <span class="character-meaning-tag">STEP : 첫 걸음과 도전</span>
+                <p class="character-desc">원스텝의 <strong>'STEP(발걸음)'</strong>을 상징하는 치타 마스코트입니다. 주저함 없이 목표를 향해 당차게 나아가는 끈기와 열정을 뜻합니다.</p>
+              </div>
+
+              <div class="character-card">
+                <img src="KakaoTalk_20261030_235939396-removebg-preview.png" alt="비아">
+                <span class="character-name-badge">비아 (VIA)</span>
+                <span class="character-meaning-tag">VIA : ~를 통하여</span>
+                <p class="character-desc">영단어 <strong>'VIA(~를 통해)'</strong>를 상징하는 가젤 마스코트입니다. 청소년을 운동과 연결함을 의미하며 통통 튀는 즐거움을 선사합니다.</p>
+              </div>
+            </div>
+
+            <!-- 스테 + 비아 = 스테비아 핵심 상징 안내 배너 -->
+            <div class="stevia-combine-banner">
+              <div class="stevia-combine-title">
+                <i class="fa-solid fa-leaf"></i> STE + VIA = STEVIA (스테비아)
+              </div>
+              <div class="stevia-combine-text">
+                두 마스코트가 합쳐진 <strong>'스테비아'</strong>는 <strong>"작은 스텝(STEP)을 통해(VIA) 더 먼 미래로 나아간다"</strong>는 원스텝의 핵심 가치를 담고 있습니다.<br>
+                또한 설탕을 대신하는 건강한 천연 감미료 <strong>'스테비아'</strong>처럼, 사용자의 몸과 마음을 더욱 건강하고 부담 없이 가꿔주겠다는 원스텝의 친건강 정신을 의미합니다.
+              </div>
+            </div>
+
+          </div>
+
+          <h2 class="section-header-title">ONESTEP만의 청소년 운동 솔루션</h2>
+          <p class="section-header-sub">공부에 지쳐 운동과 멀어진 청소년을 건강하게 가꾸어 줄 ONESTEP</p>
+
+          <!-- 실시간 스탯 통계 바 -->
+          <div class="stats-counter-bar">
+            <div>
+              <div class="stat-number">12,450+</div>
+              <div class="stat-label">누적 운동 메이트 매칭</div>
+            </div>
+            <div>
+              <div class="stat-number">350+</div>
+              <div class="stat-label">고양시 공공체육시설 연동</div>
+            </div>
+            <div>
+              <div class="stat-number">98.4%</div>
+              <div class="stat-label">사용자 서비스 만족도</div>
+            </div>
+          </div>
+
+          <!-- 서비스 핵심 카드 3종 -->
+          <div class="feature-cards-grid">
+            <div class="landing-card">
+              <div class="card-icon-box"><i class="fa-solid fa-map-location-dot"></i></div>
+              <h3 class="card-title">스마트 공공체육 지도</h3>
+              <p class="card-desc">내 주변의 검증된 공공체육시설 정보를 실시간으로 확인하고 GPS 기반 최적 경로를 안내받으세요.</p>
+            </div>
+            <div class="landing-card">
+              <div class="card-icon-box"><i class="fa-solid fa-user-group"></i></div>
+              <h3 class="card-title">클린 매너 메이트 매칭</h3>
+              <p class="card-desc">10-Step 매너 평가 시스템으로 신뢰할 수 있는 운동 메이트를 찾고 1:1 메시지로 안전하게 약속을 잡으세요.</p>
+            </div>
+            <div class="landing-card">
+              <div class="card-icon-box"><i class="fa-solid fa-boxes-packing"></i></div>
+              <h3 class="card-title">원스텝의 운동 프로그램</h3>
+              <p class="card-desc">돌림이, 땡김이, 달림이 등 청소년을 위해 직접 개발한 운동 기구를 제공합니다.</p>
+            </div>
+          </div>
+
+          <!-- 공지사항 및 리뷰 Dual Grid -->
+          <div class="info-dual-grid">
+            <div class="info-box">
+              <h3><i class="fa-solid fa-bullhorn"></i> 플랫폼 최신 공지사항</h3>
+              <ul class="info-list">
+                <li><span>[안내] 2026 하반기 청소년 체력왕 챌린지 오픈</span> <small>10.28</small></li>
+                <li><span>[업데이트] 1:1 메이트 메시지 UI 업데이트</span> <small>10.25</small></li>
+                <li><span>[제휴] 고양시 어울림누리 체육시설 추가</span> <small>10.15</small></li>
+              </ul>
+            </div>
+            <div class="info-box">
+              <h3><i class="fa-solid fa-comment-dots"></i> 생생한 이용 후기</h3>
+              <ul class="info-list">
+                <li><span>"화정동 러닝 메이트를 바로 찾아 매주 달리고 있어요!"</span> <small>김*준</small></li>
+                <li><span>"돌림이와 땡김이 덕분에 공부하면서 운동 할 수 있어서 좋아요!"</span> <small>이*연</small></li>
+                <li><span>"공공체육시설 위치랑 정보가 한번에 나와서 편해요."</span> <small>박*현</small></li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 푸터 (Footer) -->
+      <footer>
+        <div class="footer-inner">
+          <div>
+            <div class="footer-links">
+              <a href="javascript:void(0)">이용약관</a>
+              <a href="javascript:void(0)">개인정보처리방침</a>
+              <a href="javascript:void(0)">청소년보호정책</a>
+              <a href="javascript:void(0)">고객센터</a>
+            </div>
+            <p>ONESTEP | 대표: 위하윤 | 사업자등록번호: 123-45-67890</p>
+            <p>주소: 경기도 고양시 일산동구 위시티4로 112 1층 홀 | 이메일: takeastepforward@onestep.kr</p>
+            <p style="margin-top:10px; color:#718096;">© 2026 ONESTEP Healthcare Platform. All rights reserved.</p>
+          </div>
+          <div>
+            <span style="font-weight:bold; color:#FFF; display:block; margin-bottom:8px;">고객만족센터</span>
+            <span style="font-size:1.4rem; font-weight:bold; color:var(--accent-gold);">2026-1101</span>
+            <p style="font-size:0.8rem; color:#A0AEC0;">평일 09:00 ~ 18:00 (주말/공휴일 휴무)</p>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- 1. 운동 다이어리 작성 뷰 -->
+    <div id="view-diary" class="view-panel">
+      <div class="feature-container">
+        <div class="feature-title"><i class="fa-solid fa-book-bookmark"></i> 운동 다이어리 작성</div>
+        <div id="diaryForm">
+          <div class="form-group">
+            <label>날짜 선택</label>
+            <input type="date" class="form-control" id="diaryDate">
+          </div>
+          <div class="form-group">
+            <label>오늘 한 운동 선택</label>
+            <select class="form-control" id="diarySport">
+              <option value="">-- 운동 종류를 선택하세요 --</option>
+              <optgroup label="유산소">
+                <option>걷기</option><option>러닝</option><option>줄넘기</option><option>계단오르기</option><option>싸이클</option>
+              </optgroup>
+              <optgroup label="구기 종목">
+                <option>축구</option><option>풋살</option><option>농구</option><option>야구</option><option>배구</option><option>핸드볼</option><option>탁구</option><option>테니스</option><option>배드민턴</option>
+              </optgroup>
+              <optgroup label="무도&격투기">
+                <option>태권도</option><option>복싱</option><option>유도</option><option>검도</option>
+              </optgroup>
+              <optgroup label="웨이트&헬스">
+                <option>레그프레스</option><option>스쿼트</option><option>데드리프트</option><option>벤치프레스</option><option>런지</option><option>푸시업</option><option>풀업</option><option>플랭크</option><option>버피</option><option>마운틴 클라이머</option>
+              </optgroup>
+              <optgroup label="유연성&회복">
+                <option>요가</option><option>필라테스</option><option>발레</option><option>스트레칭</option><option>폼롤러</option>
+              </optgroup>
+              <optgroup label="레저&기타">
+                <option>클라이밍</option><option>인라인 스케이트</option><option>스케이트보드</option><option>댄스</option><option>골프</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>같이 운동한 메이트</label>
+            <select class="form-control" id="diaryMate">
+              <option value="없음">없음</option>
+            </select>
+          </div>
+
+          <!-- 실제 아날로그 시간에 정확히 연동되는 원형 시계 UI -->
+          <div class="form-group">
+            <label>운동 시간 설정 (입력한 실제 아날로그 시간 위치가 시계에 표시됩니다)</label>
+            <div class="time-picker-wrapper">
+              
+              <div class="time-inputs-row">
+                <div class="time-input-box">
+                  <label>시작 시간</label>
+                  <input type="time" id="startTimeInput" value="14:00" onchange="updateClockFromInputs()">
+                </div>
+                <span style="font-size:1.2rem; font-weight:bold; color:var(--accent-gold); margin-top:20px;">~</span>
+                <div class="time-input-box">
+                  <label>종료 시간</label>
+                  <input type="time" id="endTimeInput" value="16:30" onchange="updateClockFromInputs()">
+                </div>
+              </div>
+
+              <div class="interactive-clock-container">
+                <svg class="clock-svg" viewBox="0 0 100 100">
+                  <circle class="clock-face-bg" cx="50" cy="50" r="38"></circle>
+                  <!-- 12, 3, 6, 9시 눈선 -->
+                  <line x1="50" y1="14" x2="50" y2="18" class="clock-tick" />
+                  <line x1="86" y1="50" x2="82" y2="50" class="clock-tick" />
+                  <line x1="50" y1="86" x2="50" y2="82" class="clock-tick" />
+                  <line x1="14" y1="50" x2="18" y2="50" class="clock-tick" />
+                  
+                  <path id="clockArcPath" class="clock-arc-range" d=""></path>
+                </svg>
+                <div class="clock-center-display">
+                  <div class="clock-time-text" id="clockTimeRangeDisplay">14:00 ~ 16:30</div>
+                  <div class="clock-duration-text" id="clockDurationDisplay">(총 2시간 30분)</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>세부 피드백 / 메모</label>
+            <textarea class="form-control" id="diaryMemo" rows="4" placeholder="오늘 운동의 수행정도, 자극 부위, 컨디션 등을 자유롭게 기록하세요."></textarea>
+          </div>
+          <button class="btn-gold" style="width: 100%;" onclick="submitDiary()">다이어리 등록하기</button>
+        </div>
+        <div id="diaryComplete" class="complete-screen">
+          <i class="fa-solid fa-circle-check"></i>
+          <h2>다이어리 등록 완료!</h2>
+          <p style="margin-top: 10px; font-size: 1.2rem; color: var(--accent-gold);">오늘도 ONESTEP!</p>
+          <button class="btn-gold" style="margin-top: 30px; max-width: 200px;" onclick="resetDiary()">추가 작성하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 메이트 매칭 -->
+    <div id="view-mate" class="view-panel">
+      <div class="feature-container">
+        <div class="feature-title"><i class="fa-solid fa-users"></i> 운동 메이트 매칭</div>
+
+        <div class="mate-search-bar-wrap">
+          <div class="mate-search-input-box">
+            <input type="text" id="mateSearchInput" class="form-control" placeholder="종목 또는 지역 검색 (예: 러닝, 덕양구, 배드민턴, 헬스)" onkeyup="if(event.keyCode===13) searchMateBySport()">
+            <button class="btn-gold" style="white-space: nowrap;" onclick="searchMateBySport()">검색</button>
+          </div>
+          <div class="header-icon-btn" onclick="openNotiModal()" title="알림 현황">
+            <i class="fa-solid fa-bell"></i>
+            <div class="badge-dot" id="notiBadge"></div>
+          </div>
+          <div class="header-icon-btn" onclick="openDmModal()" title="1:1 메시지 (DM)">
+            <i class="fa-solid fa-paper-plane"></i>
+          </div>
+          <div class="header-icon-btn" onclick="openMannerModal()" title="운동 메이트 매너 평가">
+            <i class="fa-solid fa-stairs"></i>
+          </div>
+          <div class="header-icon-btn" onclick="openMyMateHistoryModal()" title="내 메이트 기록">
+            <i class="fa-solid fa-address-book"></i>
+          </div>
+        </div>
+
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom: 10px;">⚡ 오늘의 추천 (가로 슬라이드)</p>
+        <div class="mate-slider-wrap">
+          <div class="mate-slider-track" id="mateSliderTrack"></div>
+        </div>
+
+        <div id="mateSearchResultTitle" style="font-weight: bold; color: var(--accent-gold); margin-bottom: 10px; display: none;"></div>
+        <div id="mateGridContainer" class="mate-grid-results"></div>
+      </div>
+    </div>
+
+    <!-- 4. 지도 뷰 -->
+    <div id="view-map" class="view-panel">
+      <div id="map-container">
+        <div class="search-box">
+          <input type="text" id="keyword" placeholder="장소/동 이름 검색 (예: 화정동)" onkeyup="if(event.keyCode===13) searchLocation()">
+          <button onclick="searchLocation()">검색</button>
+          <button class="gps-btn" onclick="initUserLocation()">내 GPS</button>
+        </div>
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <!-- 기구 구매 서비스 -->
+    <div id="view-buy" class="view-panel">
+      <div class="feature-container">
+        <div id="buyStepList">
+          <div class="feature-title"><i class="fa-solid fa-cart-shopping"></i> 기구 구매 서비스</div>
+          <div class="product-grid" id="buyProductGrid"></div>
+        </div>
+
+        <!-- 구매 상세 페이지 -->
+        <div id="buyStepDetail" style="display: none;">
+          <button class="btn-outline" onclick="showBuyStep('list')" style="margin-bottom: 15px;"><i class="fa-solid fa-arrow-left"></i> 목록으로</button>
+          <div class="detail-view-box">
+            <h2 id="buyDetailName" style="color: var(--accent-gold); margin-bottom: 5px;"></h2>
+            <div id="buyDetailRating" class="product-rating" style="margin-bottom: 10px;"></div>
+            <div class="product-price" id="buyDetailPrice" style="font-size: 1.3rem; margin-bottom: 15px;"></div>
+            <div id="buyDetailImg" class="product-img-box" style="height: 220px;"></div>
+            <p id="buyDetailDesc" style="color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;"></p>
+            <button class="btn-gold" style="width: 100%;" onclick="showBuyStep('form')">구매하기</button>
+          </div>
+        </div>
+
+        <!-- 주문 결제 / 세부 옵션 선택 폼 -->
+        <div id="buyStepForm" style="display: none;">
+          <button class="btn-outline" onclick="showBuyStep('detail')" style="margin-bottom: 15px;"><i class="fa-solid fa-arrow-left"></i> 상세 페이지로</button>
+          <div class="detail-view-box">
+            <h3 style="color: var(--accent-gold); margin-bottom: 20px;">주문 / 옵션 선택</h3>
+            
+            <div id="buyOptionsArea"></div>
+
+            <div class="form-group" id="mainQuantityGroup">
+              <label>수량 선택</label>
+              <input type="number" class="form-control" id="buyQuantity" value="1" min="1" onchange="calcTotalPrice()">
+            </div>
+            <div class="form-group">
+              <label>택배 받을 주소</label>
+              <input type="text" class="form-control" placeholder="배송지 주소를 정확히 입력하세요">
+            </div>
+            <div style="background: #EFECE6; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+              <span style="font-size: 1.1rem;">총 결제금액: </span>
+              <strong id="buyTotalPrice" style="font-size: 1.4rem; color: var(--accent-gold);">0원</strong>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn-uncolored" style="flex:1;" onclick="addToCart('buy', selectedBuy)">장바구니 담기</button>
+              <button class="btn-gold" style="flex:1;" onclick="completeBuy()">구매 및 결제 완료</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마이페이지 - 내 다이어리 뷰 -->
+    <div id="view-mydiary" class="view-panel">
+      <div class="feature-container">
+        <div class="feature-title"><i class="fa-solid fa-calendar-days"></i> 마이페이지 - 내 다이어리</div>
+        <div class="calendar-header">
+          <button class="btn-outline" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <h3 id="calendarMonthYear" style="color:var(--accent-gold);"></h3>
+          <button class="btn-outline" onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div id="calendarDetailPanel" class="detail-view-box" style="margin-top:20px; display:none;">
+          <h3 id="selectedDateTitle" style="color:var(--accent-gold); margin-bottom:15px;"></h3>
+          <div style="display:flex; flex-direction:column; gap:15px;">
+            <div style="background:#F7F4EF; padding:15px; border-radius:8px; border:1px solid var(--border-color);">
+              <h4 style="color:var(--text-main); margin-bottom:8px;"><i class="fa-solid fa-pen-to-square"></i> 작성한 다이어리</h4>
+              <p id="diaryDetailContent" style="color:var(--text-muted); font-size:0.95rem;"></p>
+            </div>
+            <div style="background:#F7F4EF; padding:15px; border-radius:8px; border:1px solid var(--border-color);">
+              <h4 style="color:var(--text-main); margin-bottom:8px;"><i class="fa-solid fa-chart-pie"></i> 운동 시간 & 세부 메모</h4>
+              <p id="diaryAnalysisContent" style="color:var(--text-muted); font-size:0.95rem;"></p>
+            </div>
+            <div style="background:#F7F4EF; padding:15px; border-radius:8px; border:1px solid var(--border-color);">
+              <h4 style="color:var(--text-main); margin-bottom:8px;"><i class="fa-solid fa-user-group"></i> 함께한 메이트 운동</h4>
+              <p id="diaryMateContent" style="color:var(--text-muted); font-size:0.95rem;"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 마이페이지 - 장바구니 뷰 -->
+    <div id="view-cart" class="view-panel">
+      <div class="feature-container">
+        <div class="feature-title"><i class="fa-solid fa-cart-shopping"></i> 마이페이지 - 장바구니</div>
+        <div class="detail-view-box" id="cartContentList"></div>
+      </div>
+    </div>
+
+    <!-- 마이페이지 - 구매내역 뷰 -->
+    <div id="view-history" class="view-panel">
+      <div class="feature-container">
+        <div class="feature-title"><i class="fa-solid fa-list-check"></i> 마이페이지 - 구매내역</div>
+        <div id="historyListContainer" style="display:flex; flex-direction:column; gap:15px;"></div>
+      </div>
+    </div>
+
+    <!-- 로그인 및 회원가입 -->
+    <div id="view-login" class="view-panel">
+      <div class="feature-container" style="max-width: 450px;">
+        <div class="detail-view-box">
+          <div id="loginBox">
+            <h2 style="color: var(--accent-gold); text-align: center; margin-bottom: 25px;">로그인</h2>
+            <div class="form-group">
+              <label>아이디</label>
+              <input type="text" class="form-control" placeholder="아이디를 입력하세요">
+            </div>
+            <div class="form-group">
+              <label>비밀번호</label>
+              <input type="password" class="form-control" placeholder="비밀번호를 입력하세요">
+            </div>
+            <button class="btn-gold" style="width: 100%;" onclick="alert('로그인 되었습니다.')">로그인하기</button>
+            <button class="google-btn" onclick="alert('구글 계정으로 연동 로그인합니다.')">
+              <i class="fa-brands fa-google"></i> Google 계정으로 로그인
+            </button>
+            <div style="text-align: center; margin-top: 20px;">
+              <span style="color: var(--text-muted); font-size: 0.9rem;">아직 계정이 없으신가요? </span>
+              <a href="javascript:void(0)" onclick="toggleAuthBox('signup')" style="color: var(--accent-gold); font-weight: bold; text-decoration: none;">회원가입하기</a>
+            </div>
+          </div>
+          <div id="signupBox" style="display: none;">
+            <h2 style="color: var(--accent-gold); text-align: center; margin-bottom: 25px;">회원가입 (청소년 전용)</h2>
+            <div class="form-group">
+              <label>이름 (필수)</label>
+              <input type="text" class="form-control" id="signupName" placeholder="성함">
+            </div>
+            <div class="form-group">
+              <label>생년월일 (필수 - 만 19세 미만만 가입 가능)</label>
+              <input type="date" class="form-control" id="signupBirth">
+            </div>
+            <div class="form-group">
+              <label>전화번호 (필수)</label>
+              <input type="tel" class="form-control" id="signupPhone" placeholder="010-0000-0000">
+            </div>
+            <div class="form-group">
+              <label>아이디 (필수)</label>
+              <input type="text" class="form-control" id="signupId" placeholder="아이디 설정">
+            </div>
+            <div class="form-group">
+              <label>비밀번호 (필수)</label>
+              <input type="password" class="form-control" id="signupPw" placeholder="비밀번호 설정">
+            </div>
+            <div class="form-group">
+              <label>주소 (선택)</label>
+              <input type="text" class="form-control" id="signupAddr" placeholder="주소를 입력하세요 (선택사항)">
+            </div>
+            <button class="btn-gold" style="width: 100%;" onclick="validateAndSignup()">회원가입 완료</button>
+            <div style="text-align: center; margin-top: 15px;">
+              <a href="javascript:void(0)" onclick="toggleAuthBox('login')" style="color: var(--text-muted); font-size: 0.9rem;">로그인 창으로 돌아가기</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 설정 -->
+    <div id="view-settings" class="view-panel">
+      <div class="feature-container" style="max-width: 600px;">
+        <div class="feature-title"><i class="fa-solid fa-gear"></i> 계정 및 정보 설정</div>
+        <div class="detail-view-box">
+          <div class="form-group">
+            <label>아이디</label>
+            <input type="text" class="form-control" value="onestep_user" disabled style="opacity: 0.6;">
+          </div>
+          <div class="form-group">
+            <label>비밀번호 변경</label>
+            <input type="password" class="form-control" placeholder="새 비밀번호 입력">
+          </div>
+          <div class="form-group">
+            <label>이름</label>
+            <input type="text" class="form-control" value="위하윤">
+          </div>
+          <div class="form-group">
+            <label>이메일</label>
+            <input type="email" class="form-control" value="takeastepforward@onestep.kr">
+          </div>
+          <div class="form-group">
+            <label>전화번호</label>
+            <input type="tel" class="form-control" value="010-1234-5678">
+          </div>
+          <div class="form-group">
+            <label>주소</label>
+            <input type="text" class="form-control" value="경기도 고양시 일산동구 위시티4로 112 1층 홀">
+          </div>
+          <button class="btn-gold" style="width: 100%;" onclick="alert('설정이 변경되었습니다.')">변경사항 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 문의 사항 -->
+    <div id="view-inquiry" class="view-panel">
+      <div class="feature-container" style="max-width: 650px;">
+        <div class="feature-title"><i class="fa-solid fa-headset"></i> 고객 문의 센터</div>
+        <div class="detail-view-box">
+          <div class="form-group">
+            <label>문의 유형</label>
+            <select class="form-control">
+              <option>이용 관련 문의</option>
+              <option>기구 구매 문의</option>
+              <option>매칭 서비스 문의</option>
+              <option>기타 시스템 오류 신고</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>제목</label>
+            <input type="text" class="form-control" placeholder="문의 제목을 입력하세요">
+          </div>
+          <div class="form-group">
+            <label>문의 내용</label>
+            <textarea class="form-control" rows="6" placeholder="문의하실 세부 내용을 상세히 적어주시면 빠르게 답변드리겠습니다."></textarea>
+          </div>
+          <button class="btn-gold" style="width: 100%;" onclick="alert('문의가 접수되었습니다.'); switchView('view-home');">문의 제출하기</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 알림 모달 -->
+  <div class="app-modal-overlay" id="notiModal">
+    <div class="app-modal-container">
+      <div class="app-modal-header">
+        <h3><i class="fa-solid fa-bell"></i> 알림 및 매칭 신청 현황</h3>
+        <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeAppModal('notiModal')"></i>
+      </div>
+      <div class="app-modal-body" id="notiListBody"></div>
+    </div>
+  </div>
+
+  <!-- DM 메시지 모달 -->
+  <div class="app-modal-overlay" id="dmModal">
+    <div class="app-modal-container">
+      <div class="app-modal-header">
+        <h3 id="dmModalTitle"><i class="fa-solid fa-paper-plane"></i> 1:1 메시지 (메이트 대화 목록)</h3>
+        <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeAppModal('dmModal')"></i>
+      </div>
+      <div class="app-modal-body">
+        <div id="dmUserListView" class="chat-user-list"></div>
+
+        <div id="dmChatDetailView" style="display:none;">
+          <button class="btn-outline" onclick="backToDmUserList()" style="margin-bottom: 10px; padding: 4px 10px; font-size:0.8rem;"><i class="fa-solid fa-arrow-left"></i> 목록으로</button>
+          <div class="chat-messages" id="dmMessageArea"></div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="dmInput" class="form-control" placeholder="메시지를 입력하세요..." onkeyup="if(event.keyCode===13) sendDmMessage()">
+            <button class="btn-gold" onclick="sendDmMessage()">전송</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메이트 매너 평가 모달 -->
+  <div class="app-modal-overlay" id="mannerModal">
+    <div class="app-modal-container">
+      <div class="app-modal-header">
+        <h3><i class="fa-solid fa-stairs"></i> 함께한 메이트 매너 평가 (1~10 Step)</h3>
+        <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeAppModal('mannerModal')"></i>
+      </div>
+      <div class="app-modal-body">
+        <div class="form-group">
+          <label>매너를 평가할 운동 메이트 선택</label>
+          <select class="form-control" id="mannerUserSelect"></select>
+        </div>
+        <div class="form-group">
+          <label>매너 단계 체크 (1 ~ 10 Step)</label>
+          <div class="stair-rating-container" id="mate10StairContainer"></div>
+          <div style="text-align:center; margin-top:5px; font-weight:bold; color:var(--accent-gold);" id="mateStairValLbl">선택 단계: 8 Step</div>
+        </div>
+        <button class="btn-gold" style="width:100%; margin-top:10px;" onclick="submitMannerRating()">매너 점수 평가 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내 메이트 기록 모달 -->
+  <div class="app-modal-overlay" id="myMateHistoryModal">
+    <div class="app-modal-container">
+      <div class="app-modal-header">
+        <h3><i class="fa-solid fa-address-book"></i> 내 메이트 기록 및 운동 내역</h3>
+        <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeAppModal('myMateHistoryModal')"></i>
+      </div>
+      <div class="app-modal-body" id="myMateHistoryBody"></div>
+    </div>
+  </div>
+
+  <!-- 커스텀 모달 -->
+  <div id="custom-modal" class="modal-overlay">
+    <div class="modal-box">
+      <p id="modal-text">메시지 내용</p>
+      <div class="modal-btns">
+        <button class="btn-yes" id="modal-confirm">예</button>
+        <button class="btn-no" onclick="closeModal()">아니오</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 왼쪽 슬라이드 메뉴 -->
+  <aside class="sidebar sidebar-left" id="sidebarLeft">
+    <div class="sidebar-header">
+      <h2><i class="fa-solid fa-compass"></i> SERVICES</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="menu-item">
+          <div class="menu-link js-accordion">
+            <span class="menu-title"><i class="fa-solid fa-dumbbell"></i> 프로그램 안내</span>
+            <i class="fa-solid fa-chevron-down arrow-icon"></i>
+          </div>
+          <ul class="submenu">
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-diary')">운동 다이어리</a></li>
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-mate')">메이트 매칭</a></li>
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-map')">공공체육시설 안내</a></li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <a href="javascript:void(0)" class="menu-link" onclick="switchView('view-buy')">
+            <span class="menu-title"><i class="fa-solid fa-cart-shopping"></i> 기구 구매 서비스</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- 오른쪽 슬라이드 메뉴 -->
+  <aside class="sidebar sidebar-right" id="sidebarRight">
+    <div class="sidebar-header">
+      <h2><i class="fa-solid fa-user-gear"></i> SETTINGS</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="menu-item">
+          <a href="javascript:void(0)" class="menu-link" onclick="switchView('view-login')">
+            <span class="menu-title"><i class="fa-solid fa-right-to-bracket"></i> 로그인 및 회원가입</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <div class="menu-link js-accordion">
+            <span class="menu-title"><i class="fa-solid fa-id-card"></i> 마이 페이지</span>
+            <i class="fa-solid fa-chevron-down arrow-icon"></i>
+          </div>
+          <ul class="submenu">
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-mydiary')">내 다이어리</a></li>
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-cart')">장바구니</a></li>
+            <li class="submenu-item"><a href="javascript:void(0)" class="submenu-link" onclick="switchView('view-history')">구매내역</a></li>
+          </ul>
+        </li>
+        <li class="menu-item">
+          <a href="javascript:void(0)" class="menu-link" onclick="switchView('view-settings')">
+            <span class="menu-title"><i class="fa-solid fa-gear"></i> 설정</span>
+          </a>
+        </li>
+        <li class="menu-item">
+          <a href="javascript:void(0)" class="menu-link" onclick="switchView('view-inquiry')">
+            <span class="menu-title"><i class="fa-solid fa-headset"></i> 문의사항</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- JavaScript 스크립트 -->
+  <script>
+    var map = null;
+    var markersCluster = null;
+    var userLocation = { lat: 37.6584, lng: 126.8320, name: "현재 위치 (고양시청)" };
+    var myLocationMarker = null;
+    var mapInitialized = false;
+
+    var redUserIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+
+    var greenIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [20, 32], iconAnchor: [10, 32], popupAnchor: [1, -28], shadowSize: [32, 32]
+    });
+
+    function initMapSystem() {
+      if (mapInitialized) {
+        setTimeout(function() { map.invalidateSize(); }, 200);
+        return;
+      }
+
+      map = L.map('map', { zoomControl: false }).setView([37.6584, 126.8320], 12);
+      L.control.zoom({ position: 'topright' }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+      markersCluster = L.markerClusterGroup({
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+        zoomToBoundsOnClick: true,
+        spiderfyDistanceMultiplier: 1.8,
+        maxClusterRadius: 15
+      });
+
+      var rawCsvList = [
+        ["어울림누리","덕양구 성사동 777",37.6498399542162,126.834642925993],
+        ["문예회관체육관","덕양구 주교동 600",37.6580907788832,126.832215143813],
+        ["장미란체육관","덕양구 행신동 901",37.6292587698114,126.840259328254],
+        ["성사다목적체육관","덕양구 성사동 551",37.6622945489327,126.843469507068],
+        ["관산다목적체육관","관산동 1018",37.6901525606976,126.866981280075]
+      ];
+
+      function getDetails(name) {
+        return { hours: "06:00 ~ 22:00", phone: "031-960-0300", note: "공공 체육시설" };
+      }
+
+      var facilityList = [];
+      var i = 0;
+      while (facilityList.length < 50) {
+        var base = rawCsvList[i % rawCsvList.length];
+        var info = getDetails(base[0]);
+        facilityList.push({
+          name: base[0] + " (" + (i + 1) + ")",
+          addr: "경기도 고양시 " + base[1],
+          lat: base[2] + (Math.random() - 0.5) * 0.02,
+          lng: base[3] + (Math.random() - 0.5) * 0.02,
+          hours: info.hours,
+          phone: info.phone,
+          note: info.note
+        });
+        i++;
+      }
+
+      facilityList.forEach(function(item) {
+        var marker = L.marker([item.lat, item.lng], { icon: greenIcon });
+        var popupHTML = `
+          <div class="popup-card">
+            <span class="tag">공공체육시설</span>
+            <h3>${item.name}</h3>
+            <p><span class="label">📍 상세주소:</span> ${item.addr}</p>
+            <p><span class="label">⏰ 운영시간:</span> ${item.hours}</p>
+            <p><span class="label">📞 전화번호:</span> ${item.phone}</p>
+          </div>
+        `;
+        marker.bindPopup(popupHTML, { closeButton: false, offset: [0, -20] });
+        markersCluster.addLayer(marker);
+      });
+
+      map.addLayer(markersCluster);
+      initUserLocation();
+      mapInitialized = true;
+    }
+
+    function showModal(text, confirmCallback) {
+      document.getElementById('modal-text').innerHTML = text;
+      document.getElementById('custom-modal').style.display = 'flex';
+      var confirmBtn = document.getElementById('modal-confirm');
+      confirmBtn.onclick = function() {
+        closeModal();
+        confirmCallback();
+      };
+    }
+
+    function closeModal() {
+      document.getElementById('custom-modal').style.display = 'none';
+    }
+
+    function updateMyLocation(lat, lng, name) {
+      userLocation = { lat: lat, lng: lng, name: name };
+      if (map) {
+        map.setView([lat, lng], 14);
+        if (myLocationMarker) map.removeLayer(myLocationMarker);
+        myLocationMarker = L.marker([lat, lng], { icon: redUserIcon }).addTo(map);
+      }
+    }
+
+    function initUserLocation() {
+      updateMyLocation(37.6584, 126.8320, "고양시청 (기본 위치)");
+    }
+
+    function searchLocation() {
+      var keyword = document.getElementById('keyword').value.trim();
+      if (!keyword) return alert("검색어를 입력해 주세요.");
+      fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent("고양시 " + keyword))
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            updateMyLocation(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name.split(',')[0]);
+          } else {
+            alert("검색 결과가 없습니다.");
+          }
+        });
+    }
+
+    function switchView(viewId) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+      const activePanel = document.getElementById(viewId);
+      if (activePanel) activePanel.classList.add('active');
+
+      document.getElementById('sidebarLeft').classList.remove('open');
+      document.getElementById('sidebarRight').classList.remove('open');
+
+      if (viewId === 'view-map') {
+        initMapSystem();
+      } else if (viewId === 'view-buy') {
+        initBuyPage();
+      } else if (viewId === 'view-mydiary') {
+        renderCalendar();
+      } else if (viewId === 'view-cart') {
+        renderCart();
+      } else if (viewId === 'view-history') {
+        renderHistory();
+      } else if (viewId === 'view-mate') {
+        initMateMatching();
+      }
+    }
+
+    /* 실제 아날로그 시간에 정확히 연동되는 원형 시계 알고리즘 */
+    function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+      const angleInRadians = angleInDegrees * Math.PI / 180.0;
+      return {
+        x: centerX + (radius * Math.cos(angleInRadians)),
+        y: centerY + (radius * Math.sin(angleInRadians))
+      };
+    }
+
+    function describeArc(x, y, radius, startAngle, endAngle) {
+      const start = polarToCartesian(x, y, radius, endAngle);
+      const end = polarToCartesian(x, y, radius, startAngle);
+      let diff = endAngle - startAngle;
+      if (diff < 0) diff += 360;
+      const largeArcFlag = diff <= 180 ? "0" : "1";
+      return [
+        "M", start.x, start.y,
+        "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+      ].join(" ");
+    }
+
+    function updateClockFromInputs() {
+      const startTimeVal = document.getElementById('startTimeInput').value;
+      const endTimeVal = document.getElementById('endTimeInput').value;
+
+      if (!startTimeVal || !endTimeVal) return;
+
+      const [startH, startM] = startTimeVal.split(':').map(Number);
+      const [endH, endM] = endTimeVal.split(':').map(Number);
+
+      // 12시간제 각도 계산
+      let startTotalMins = (startH % 12) * 60 + startM;
+      let endTotalMins = (endH % 12) * 60 + endM;
+
+      let startDeg = (startTotalMins / (12 * 60)) * 360;
+      let endDeg = (endTotalMins / (12 * 60)) * 360;
+
+      let startAbs = startH * 60 + startM;
+      let endAbs = endH * 60 + endM;
+      let diffMins = endAbs - startAbs;
+
+      if (diffMins < 0) diffMins += 24 * 60;
+
+      let durH = Math.floor(diffMins / 60);
+      let durM = diffMins % 60;
+
+      const arcPath = document.getElementById('clockArcPath');
+      
+      if (diffMins >= 12 * 60) {
+        arcPath.setAttribute('d', describeArc(50, 50, 38, 0, 359.99));
+      } else if (diffMins === 0) {
+        arcPath.setAttribute('d', '');
+      } else {
+        arcPath.setAttribute('d', describeArc(50, 50, 38, startDeg, endDeg));
+      }
+
+      document.getElementById('clockTimeRangeDisplay').innerText = `${startTimeVal} ~ ${endTimeVal}`;
+      document.getElementById('clockDurationDisplay').innerText = `(총 ${durH}시간 ${durM}분)`;
+    }
+
+    let diaryList = [];
+    function submitDiary() {
+      const date = document.getElementById('diaryDate').value;
+      const sport = document.getElementById('diarySport').value;
+      const mate = document.getElementById('diaryMate').value;
+      const timeStr = document.getElementById('clockTimeRangeDisplay').innerText + " " + document.getElementById('clockDurationDisplay').innerText;
+      const memo = document.getElementById('diaryMemo').value || "작성된 메모가 없습니다.";
+
+      if (!date || !sport) return alert('날짜와 운동 종류를 선택해 주세요.');
+
+      diaryList.push({ date, sport, mate, timeStr, memo });
+      document.getElementById('diaryForm').style.display = 'none';
+      document.getElementById('diaryComplete').style.display = 'block';
+
+      const dObj = new Date(date);
+      if(!isNaN(dObj.getTime())){
+        curYear = dObj.getFullYear();
+        curMonth = dObj.getMonth();
+      }
+    }
+
+    function resetDiary() {
+      document.getElementById('diaryForm').style.display = 'block';
+      document.getElementById('diaryComplete').style.display = 'none';
+      document.getElementById('diaryMemo').value = '';
+    }
+
+    // 메이트 데이터
+    const mateData = [
+      { name: "김민준", age: "14세", gender: "남", sport: "러닝", loc: "덕양구 성사동", manner: "9 Step", desc: "주말 아침 러닝 메이트 구합니다!" },
+      { name: "이서연", age: "18세", gender: "여", sport: "배드민턴", loc: "일산동구 백석동", manner: "8 Step", desc: "퇴근 후 랠리 위주로 치실 분 편하게 연락주세요." },
+      { name: "박도현", age: "17세", gender: "남", sport: "스쿼트", loc: "일산서구 대화동", manner: "10 Step", desc: "3대 운동 자세 상호 피드백 메이트 모집." },
+      { name: "정예은", age: "11세", gender: "여", sport: "요가", loc: "덕양구 화정동", manner: "9 Step", desc: "화정 체육센터 요가 같이 다니실 분!" },
+      { name: "최현우", age: "15세", gender: "남", sport: "축구", loc: "일산동구 중산동", manner: "7 Step", desc: "풋살 용병 및 매치 메이트 환영합니다." },
+      { name: "강지훈", age: "19세", gender: "남", sport: "싸이클", loc: "덕양구 행신동", manner: "9 Step", desc: "한강 라이딩 코스 함께 달릴 메이트 구해요." },
+      { name: "윤서윤", age: "13세", gender: "여", sport: "필라테스", loc: "일산동구 장항동", manner: "10 Step", desc: "주말 오전 필라테스 클래스 같이 가요." },
+      { name: "임하준", age: "16세", gender: "남", sport: "농구", loc: "덕양구 성사동", manner: "8 Step", desc: "어울림누리 농구장에서 3대3 하실 분!" },
+      { name: "한수아", age: "18세", gender: "여", sport: "테니스", loc: "일산서구 대화동", manner: "9 Step", desc: "대화테니스장 단식/복식 같이 치실 분." },
+      { name: "오건우", age: "17세", gender: "남", sport: "클라이밍", loc: "일산동구 백석동", manner: "10 Step", desc: "볼더링 세션 같이 하실 메이트 원해요." }
+    ];
+
+    function createMateCard(item) {
+      const card = document.createElement('div');
+      card.className = 'mate-card-item';
+      card.innerHTML = `
+        <div style="font-weight:bold; font-size:1rem; margin-bottom:4px;">${item.name} (${item.age}, ${item.gender}) <span class="manner-badge">${item.manner}</span></div>
+        <div style="font-size:0.85rem; color:var(--accent-gold); font-weight:bold; margin-bottom:6px;">[${item.sport}] ${item.loc}</div>
+        <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">${item.desc}</div>
+        <button class="btn-gold" style="width:100%; margin-top:10px; padding:6px; font-size:0.82rem;" onclick="applyMate('${item.name}')">매칭 신청하기</button>
+      `;
+      return card;
+    }
+
+    function initMateMatching() {
+      const track = document.getElementById('mateSliderTrack');
+      track.innerHTML = '';
+      
+      const top5 = mateData.slice(0, 5);
+      const listToRender = [...top5, ...top5];
+      
+      listToRender.forEach(item => {
+        track.appendChild(createMateCard(item));
+      });
+
+      document.getElementById('mateSearchResultTitle').style.display = 'none';
+      document.getElementById('mateGridContainer').innerHTML = '';
+      updateMateDropdowns();
+    }
+
+    function searchMateBySport() {
+      const query = document.getElementById('mateSearchInput').value.trim().toLowerCase();
+      const grid = document.getElementById('mateGridContainer');
+      const title = document.getElementById('mateSearchResultTitle');
+      grid.innerHTML = '';
+
+      const filtered = mateData.filter(m => 
+        m.sport.toLowerCase().includes(query) || 
+        m.loc.toLowerCase().includes(query) || 
+        m.name.toLowerCase().includes(query)
+      );
+      
+      title.style.display = 'block';
+      if (query) {
+        title.innerText = `'${query}' 검색결과 (${filtered.length}건)`;
+      } else {
+        title.innerText = `전체 운동 메이트 목록 (${mateData.length}명)`;
+      }
+
+      filtered.forEach(item => {
+        grid.appendChild(createMateCard(item));
+      });
+    }
+
+    let notiList = [
+      { id: 1, text: "김민준님이 러닝 운동 메이트 매칭을 수락하셨습니다.", status: "accepted", name: "김민준" },
+      { id: 2, text: "이서연님이 배드민턴 운동 메이트 매칭을 수락하셨습니다.", status: "accepted", name: "이서연" }
+    ];
+    let acceptedMates = ["김민준", "이서연"];
+    let mateExerciseLogs = {
+      "김민준": [
+        { date: "2026-10-28", sport: "러닝", loc: "덕양구 어울림누리 트랙" },
+        { date: "2026-11-01", sport: "조깅 및 인터벌", loc: "화정동 공원" }
+      ],
+      "이서연": [
+        { date: "2026-10-31", sport: "배드민턴 랠리", loc: "일산 백석 체육관" }
+      ]
+    };
+
+    let chatHistories = {
+      "김민준": [
+        { sender: "other", text: "안녕하세요! 러닝 메이트 매칭 감사합니다." },
+        { sender: "me", text: "네 반갑습니다! 이번 주말 어울림누리 트랙에서 만나요!" }
+      ],
+      "이서연": [
+        { sender: "other", text: "안녕하세요 배드민턴 랠리 즐겁게 쳤습니다!" },
+        { sender: "me", text: "수고하셨습니다! 다음에 또 같이 쳐요." }
+      ]
+    };
+    let unreadMates = { "김민준": true, "이서연": false };
+    let currentChatMate = null;
+
+    function applyMate(name) {
+      alert(`${name}님에게 매칭 신청을 보냈습니다.`);
+      
+      if(!acceptedMates.includes(name)) {
+        acceptedMates.push(name);
+        mateExerciseLogs[name] = [
+          { date: new Date().toISOString().split('T')[0], sport: "첫 매칭 연결", loc: "위치 협의 중" }
+        ];
+        chatHistories[name] = [
+          { sender: "other", text: `안녕하세요! ${name}입니다. 매칭 신청해주셔서 감사합니다! 바로 같이 운동해요 😊` }
+        ];
+        unreadMates[name] = true;
+        notiList.unshift({
+          id: Date.now(),
+          text: `${name}님이 매칭 신청을 즉시 수락하셨습니다! (1:1 메시지 확인 가능)`,
+          status: "accepted",
+          name: name
+        });
+        document.getElementById('notiBadge').style.display = 'block';
+        updateMateDropdowns();
+      }
+    }
+
+    function updateMateDropdowns() {
+      const diaryMateSel = document.getElementById('diaryMate');
+      const mannerUserSel = document.getElementById('mannerUserSelect');
+      
+      diaryMateSel.innerHTML = '<option value="없음">없음</option>';
+      mannerUserSel.innerHTML = '';
+
+      acceptedMates.forEach(m => {
+        diaryMateSel.innerHTML += `<option value="${m}">${m}</option>`;
+        mannerUserSel.innerHTML += `<option value="${m}">${m}</option>`;
+      });
+    }
+
+    function openNotiModal() {
+      document.getElementById('notiBadge').style.display = 'none';
+      const body = document.getElementById('notiListBody');
+      body.innerHTML = '';
+      if(!notiList.length) {
+        body.innerHTML = '<p style="text-align:center; color:var(--text-muted);">도착한 알림이 없습니다.</p>';
+      } else {
+        notiList.forEach(n => {
+          body.innerHTML += `
+            <div style="background:#F7F4EF; padding:12px; border-radius:8px; margin-bottom:10px; border:1px solid var(--border-color); font-size:0.9rem;">
+              <i class="fa-solid fa-circle-check" style="color:var(--accent-gold); margin-right:6px;"></i> ${n.text}
+            </div>
+          `;
+        });
+      }
+      document.getElementById('notiModal').style.display = 'flex';
+    }
+
+    function openDmModal() {
+      renderDmUserList();
+      document.getElementById('dmUserListView').style.display = 'flex';
+      document.getElementById('dmChatDetailView').style.display = 'none';
+      document.getElementById('dmModalTitle').innerHTML = `<i class="fa-solid fa-paper-plane"></i> 1:1 메시지 (메이트 대화 목록)`;
+      document.getElementById('dmModal').style.display = 'flex';
+    }
+
+    function renderDmUserList() {
+      const container = document.getElementById('dmUserListView');
+      container.innerHTML = '';
+      if(!acceptedMates.length) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">연결된 수락 메이트가 없습니다.</p>';
+        return;
+      }
+      acceptedMates.forEach(m => {
+        const hasUnread = unreadMates[m];
+        const lastMsg = chatHistories[m] && chatHistories[m].length ? chatHistories[m][chatHistories[m].length - 1].text : "대화를 시작해보세요.";
+        container.innerHTML += `
+          <div class="chat-user-item" onclick="enterDmChat('${m}')">
+            <div>
+              <div style="font-weight:bold; color:var(--accent-gold); font-size:0.95rem;">${m}</div>
+              <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px; max-width:260px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${lastMsg}</div>
+            </div>
+            ${hasUnread ? '<div class="chat-unread-badge">N</div>' : ''}
+          </div>
+        `;
+      });
+    }
+
+    function enterDmChat(mateName) {
+      currentChatMate = mateName;
+      unreadMates[mateName] = false;
+      document.getElementById('dmUserListView').style.display = 'none';
+      document.getElementById('dmChatDetailView').style.display = 'block';
+      document.getElementById('dmModalTitle').innerText = `${mateName}님과의 1:1 대화`;
+      loadDmHistory();
+    }
+
+    function backToDmUserList() {
+      currentChatMate = null;
+      renderDmUserList();
+      document.getElementById('dmUserListView').style.display = 'flex';
+      document.getElementById('dmChatDetailView').style.display = 'none';
+      document.getElementById('dmModalTitle').innerHTML = `<i class="fa-solid fa-paper-plane"></i> 1:1 메시지 (메이트 대화 목록)`;
+    }
+
+    function loadDmHistory() {
+      if(!currentChatMate) return;
+      const area = document.getElementById('dmMessageArea');
+      area.innerHTML = '';
+      const msgs = chatHistories[currentChatMate] || [];
+      msgs.forEach(m => {
+        area.innerHTML += `<div class="chat-bubble ${m.sender}">${m.text}</div>`;
+      });
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function sendDmMessage() {
+      const input = document.getElementById('dmInput');
+      const txt = input.value.trim();
+      if(!txt || !currentChatMate) return;
+
+      if(!chatHistories[currentChatMate]) chatHistories[currentChatMate] = [];
+      chatHistories[currentChatMate].push({ sender: "me", text: txt });
+      input.value = '';
+      loadDmHistory();
+    }
+
+    function openMannerModal() {
+      initStairRating();
+      document.getElementById('mannerModal').style.display = 'flex';
+    }
+
+    let selectedStairVal = 8;
+    function initStairRating() {
+      const container = document.getElementById('mate10StairContainer');
+      container.innerHTML = '';
+      for(let i = 1; i <= 10; i++) {
+        const step = document.createElement('div');
+        step.className = `stair-step ${i <= selectedStairVal ? 'active' : ''}`;
+        step.style.height = `${i * 10}%`;
+        step.innerText = `${i}`;
+        step.onclick = () => {
+          selectedStairVal = i;
+          document.getElementById('mateStairValLbl').innerText = `선택 단계: ${selectedStairVal} Step`;
+          initStairRating();
+        };
+        container.appendChild(step);
+      }
+    }
+
+    function submitMannerRating() {
+      const target = document.getElementById('mannerUserSelect').value;
+      if(!target) return alert('평가할 메이트가 없습니다.');
+      alert(`${target}님에게 ${selectedStairVal} Step 매너 평가를 완료했습니다!`);
+      closeAppModal('mannerModal');
+    }
+
+    function openMyMateHistoryModal() {
+      const body = document.getElementById('myMateHistoryBody');
+      body.innerHTML = '';
+      if(!acceptedMates.length) {
+        body.innerHTML = '<p style="text-align:center; color:var(--text-muted);">함께한 운동 메이트 기록이 없습니다.</p>';
+      } else {
+        acceptedMates.forEach(m => {
+          const logs = mateExerciseLogs[m] || [];
+          let logHTML = '';
+          logs.forEach(log => {
+            logHTML += `<li style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">🗓️ <strong>${log.date}</strong> - [${log.sport}] (${log.loc})</li>`;
+          });
+
+          body.innerHTML += `
+            <div style="background:#F7F4EF; padding:15px; border-radius:10px; margin-bottom:12px; border:1px solid var(--border-color);">
+              <div style="font-weight:bold; color:var(--accent-gold); font-size:1.05rem;"><i class="fa-solid fa-user-check"></i> ${m} 메이트</div>
+              <div style="margin-top:8px; font-weight:bold; font-size:0.88rem; color:var(--text-main);">같이했던 운동 기록:</div>
+              <ul style="padding-left:18px; margin-top:4px;">
+                ${logHTML || '<li style="font-size:0.85rem; color:var(--text-muted);">기록된 운동이 없습니다.</li>'}
+              </ul>
+            </div>
+          `;
+        });
+      }
+      document.getElementById('myMateHistoryModal').style.display = 'flex';
+    }
+
+    function closeAppModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    const buyProducts = [
+      { id: 101, type: "dolim", name: "돌림이", price: 10900, origPrice: 13000, rating: "★ 4.8", desc: "손과 팔의 피로를 완화해주는 교체형 롤러", image: "KakaoTalk_20261030_233620239_01.jpg" },
+      { id: 102, type: "ttaengim", name: "땡김이", price: 7900, origPrice: 9000, rating: "★ 4.9", desc: "다리 근육을 강화시켜주는 간편한 의자 조립형 운동기구", image: "KakaoTalk_20261030_233620239_02.jpg" },
+      { id: 103, type: "dalim", name: "달림이", price: 4990, rating: "★ 4.7", desc: "GPS를 기반으로한 학생 체력 증진 프로그램", isSubscription: true, image: "KakaoTalk_20261030_233620239.jpg" },
+      { id: 104, type: "fabric", name: "롤러 원단 추가 구매", price: 2000, rating: "★ 4.6", desc: "돌림이 교체용 원단 (밍크, 골덴, 지압 선택 가능)", image: "" },
+      { id: 105, type: "band", name: "강도별 밴드 추가 구매", price: 4500, rating: "★ 4.9", desc: "땡김이 교체용 밴드 (강도별 선택 가능)", image: "" }
+    ];
+
+    let selectedBuy = null;
+
+    function initBuyPage() {
+      const grid = document.getElementById('buyProductGrid');
+      grid.innerHTML = '';
+      buyProducts.forEach(p => {
+        let priceHTML = p.origPrice ? `<span class="price-del">${p.origPrice.toLocaleString()}원</span>${p.price.toLocaleString()}원` : `${p.price.toLocaleString()}원`;
+        if (p.isSubscription) {
+          priceHTML += ` <span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">/ 월</span>`;
+        }
+        
+        let imgHTML = p.image ? `<img src="${p.image}" alt="${p.name}">` : `<i class="fa-solid fa-cart-shopping"></i>`;
+
+        grid.innerHTML += `
+          <div class="product-card" onclick="openBuyDetail(${p.id})">
+            <div class="product-img-box">${imgHTML}</div>
+            <div class="product-name">${p.name}</div>
+            <div class="product-price">${priceHTML}</div>
+            <div class="product-rating">${p.rating}</div>
+          </div>
+        `;
+      });
+      showBuyStep('list');
+    }
+
+    function openBuyDetail(id) {
+      selectedBuy = buyProducts.find(p => p.id === id);
+      document.getElementById('buyDetailName').innerText = selectedBuy.name;
+      
+      let priceText = selectedBuy.origPrice ? `<span class="price-del">${selectedBuy.origPrice.toLocaleString()}원</span> ` : '';
+      priceText += `${selectedBuy.price.toLocaleString()}원`;
+      if (selectedBuy.isSubscription) priceText += ` / 월`;
+      
+      document.getElementById('buyDetailPrice').innerHTML = priceText;
+      document.getElementById('buyDetailRating').innerText = selectedBuy.rating;
+      document.getElementById('buyDetailDesc').innerText = selectedBuy.desc;
+      
+      let imgHTML = selectedBuy.image ? `<img src="${selectedBuy.image}" alt="${selectedBuy.name}">` : `<i class="fa-solid fa-cart-shopping"></i>`;
+      document.getElementById('buyDetailImg').innerHTML = imgHTML;
+
+      const optArea = document.getElementById('buyOptionsArea');
+      const mainQtyGroup = document.getElementById('mainQuantityGroup');
+      optArea.innerHTML = '';
+
+      if (selectedBuy.type === 'fabric') {
+        mainQtyGroup.style.display = 'none';
+        optArea.innerHTML = `
+          <div class="form-group">
+            <label>원단 종류별 수량 선택 (개당 2,000원)</label>
+            <div class="option-sub-row">
+              <span>밍크 원단</span>
+              <input type="number" class="form-control" id="fabricMink" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>골덴 원단</span>
+              <input type="number" class="form-control" id="fabricGold" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>지압 원단</span>
+              <input type="number" class="form-control" id="fabricJiap" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+          </div>
+        `;
+      } 
+      else if (selectedBuy.type === 'band') {
+        mainQtyGroup.style.display = 'none';
+        optArea.innerHTML = `
+          <div class="form-group">
+            <label>강도별 밴드 수량 선택 (개당 4,500원)</label>
+            <div class="option-sub-row">
+              <span>1단계 밴드 (초급)</span>
+              <input type="number" class="form-control" id="bandLvl1" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>2단계 밴드 (중초급)</span>
+              <input type="number" class="form-control" id="bandLvl2" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>3단계 밴드 (중급)</span>
+              <input type="number" class="form-control" id="bandLvl3" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>4단계 밴드 (상급)</span>
+              <input type="number" class="form-control" id="bandLvl4" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+            <div class="option-sub-row">
+              <span>5단계 밴드 (최상급)</span>
+              <input type="number" class="form-control" id="bandLvl5" value="0" min="0" style="width:100px;" onchange="calcTotalPrice()">
+            </div>
+          </div>
+        `;
+      } else {
+        mainQtyGroup.style.display = 'block';
+      }
+
+      calcTotalPrice();
+      showBuyStep('detail');
+    }
+
+    function showBuyStep(step) {
+      document.getElementById('buyStepList').style.display = step === 'list' ? 'block' : 'none';
+      document.getElementById('buyStepDetail').style.display = step === 'detail' ? 'block' : 'none';
+      document.getElementById('buyStepForm').style.display = step === 'form' ? 'block' : 'none';
+    }
+
+    function calcTotalPrice() {
+      if (!selectedBuy) return;
+      let total = 0;
+
+      if (selectedBuy.type === 'fabric') {
+        const mink = parseInt(document.getElementById('fabricMink')?.value || 0);
+        const gold = parseInt(document.getElementById('fabricGold')?.value || 0);
+        const jiap = parseInt(document.getElementById('fabricJiap')?.value || 0);
+        total = (mink + gold + jiap) * selectedBuy.price;
+      } else if (selectedBuy.type === 'band') {
+        const b1 = parseInt(document.getElementById('bandLvl1')?.value || 0);
+        const b2 = parseInt(document.getElementById('bandLvl2')?.value || 0);
+        const b3 = parseInt(document.getElementById('bandLvl3')?.value || 0);
+        const b4 = parseInt(document.getElementById('bandLvl4')?.value || 0);
+        const b5 = parseInt(document.getElementById('bandLvl5')?.value || 0);
+        total = (b1 + b2 + b3 + b4 + b5) * selectedBuy.price;
+      } else {
+        const qty = parseInt(document.getElementById('buyQuantity').value) || 1;
+        total = selectedBuy.price * qty;
+      }
+
+      document.getElementById('buyTotalPrice').innerText = `${total.toLocaleString()}원`;
+    }
+
+    function completeBuy() {
+      alert('구매 결제가 완료되었습니다!');
+      addToHistory('buy', selectedBuy.name);
+      switchView('view-home');
+    }
+
+    let curYear = 2026, curMonth = 9; // 10월
+    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+    function renderCalendar() {
+      document.getElementById('calendarMonthYear').innerText = `${curYear}년 ${curMonth + 1}월`;
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      dayNames.forEach(dn => {
+        grid.innerHTML += `<div class="calendar-day-head">${dn}</div>`;
+      });
+
+      const firstDay = new Date(curYear, curMonth, 1).getDay();
+      const lastDate = new Date(curYear, curMonth + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="calendar-day empty"></div>`;
+      }
+
+      for (let d = 1; d <= lastDate; d++) {
+        const dateStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const hasDiary = diaryList.some(item => item.date === dateStr);
+
+        const dayEl = document.createElement('div');
+        dayEl.className = `calendar-day ${hasDiary ? 'has-diary' : ''}`;
+        dayEl.innerText = d;
+        if(hasDiary) {
+          dayEl.innerHTML += `<div class="diary-indicator"></div>`;
+        }
+        dayEl.onclick = () => showCalendarDetail(dateStr);
+        grid.appendChild(dayEl);
+      }
+    }
+
+    function changeMonth(delta) {
+      curMonth += delta;
+      if (curMonth > 11) {
+        curYear += Math.floor(curMonth / 12);
+        curMonth = curMonth % 12;
+      } else if (curMonth < 0) {
+        curYear += Math.floor(curMonth / 12);
+        curMonth = (curMonth % 12 + 12) % 12;
+      }
+      renderCalendar();
+      document.getElementById('calendarDetailPanel').style.display = 'none';
+    }
+
+    function showCalendarDetail(dateStr) {
+      const panel = document.getElementById('calendarDetailPanel');
+      const title = document.getElementById('selectedDateTitle');
+      const diaryContent = document.getElementById('diaryDetailContent');
+      const analysisContent = document.getElementById('diaryAnalysisContent');
+      const mateContent = document.getElementById('diaryMateContent');
+
+      title.innerText = `📅 ${dateStr} 다이어리 기록`;
+      const matched = diaryList.filter(item => item.date === dateStr);
+
+      if (matched.length === 0) {
+        diaryContent.innerText = "이 날짜에 작성된 운동 다이어리가 없습니다.";
+        analysisContent.innerText = "기록이 없어 세부 정보를 표시할 수 없습니다.";
+        mateContent.innerText = "함께한 메이트가 없습니다.";
+      } else {
+        const lastEntry = matched[matched.length - 1];
+        diaryContent.innerText = `[운동 종목] ${lastEntry.sport}`;
+        analysisContent.innerText = `[진행 시간] ${lastEntry.timeStr}\n[세부 메모] ${lastEntry.memo}`;
+        mateContent.innerText = `[함께한 메이트] ${lastEntry.mate}`;
+      }
+      panel.style.display = 'block';
+    }
+
+    let cartList = [];
+    function addToCart(type, item) {
+      cartList.push({ type, item, date: new Date().toLocaleDateString() });
+      alert('장바구니에 추가되었습니다.');
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartContentList');
+      container.innerHTML = cartList.length ? '' : '<p style="text-align:center;">장바구니가 비어 있습니다.</p>';
+      cartList.forEach((c) => {
+        container.innerHTML += `<div>${c.item.name} - ${c.date}</div>`;
+      });
+    }
+
+    let historyList = [];
+    function addToHistory(type, name) {
+      historyList.unshift({ type, name, date: new Date().toLocaleDateString() });
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyListContainer');
+      container.innerHTML = historyList.length ? '' : '<p style="text-align:center;">구매 내역이 없습니다.</p>';
+      historyList.forEach(h => {
+        container.innerHTML += `<div class="detail-view-box">${h.name} (${h.date})</div>`;
+      });
+    }
+
+    function toggleAuthBox(type) {
+      document.getElementById('loginBox').style.display = type === 'login' ? 'block' : 'none';
+      document.getElementById('signupBox').style.display = type === 'signup' ? 'block' : 'none';
+    }
+
+    function validateAndSignup() {
+      alert('회원가입 완료!');
+      toggleAuthBox('login');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const sidebarLeft = document.getElementById('sidebarLeft');
+      const sidebarRight = document.getElementById('sidebarRight');
+      const leftTrigger = document.getElementById('leftTrigger');
+      const rightTrigger = document.getElementById('rightTrigger');
+
+      leftTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebarLeft.classList.toggle('open');
+        sidebarRight.classList.remove('open');
+      });
+
+      rightTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebarRight.classList.toggle('open');
+        sidebarLeft.classList.remove('open');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!sidebarLeft.contains(e.target) && !leftTrigger.contains(e.target)) {
+          sidebarLeft.classList.remove('open');
+        }
+        if (!sidebarRight.contains(e.target) && !rightTrigger.contains(e.target)) {
+          sidebarRight.classList.remove('open');
+        }
+      });
+
+      document.querySelectorAll('.js-accordion').forEach(header => {
+        header.addEventListener('click', () => {
+          const menuItem = header.parentElement;
+          const submenu = menuItem.querySelector('.submenu');
+          if (!submenu) return;
+          menuItem.classList.toggle('active');
+          submenu.classList.toggle('active');
+        });
+      });
+
+      initMateMatching();
+      updateClockFromInputs();
+    });
+  </script>
+</body>
+</html>
